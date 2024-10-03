@@ -1,0 +1,7 @@
+{
+  "npm.packageManager": "npm",
+  "javascript.suggest.autoImports": true,
+  "typescript.suggest.autoImports": true,
+  "javascript.suggest.enabled": true,
+  "typescript.suggest.enabled": true
+}
