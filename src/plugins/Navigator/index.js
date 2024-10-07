@@ -51,13 +51,33 @@ export class NavigatorPlugin extends Plugin {
       .then(() => true)
       .catch(() => false);
 
+  resolvePath = async (pathArg) => {
+    const { cli } = this.fileManager._plugins;
+    try {
+      const newPath = path.resolve(this.#currentDir, pathArg);
+
+      if (!(await this.hasAccess(newPath))) {
+        throw new Error('Invalid path');
+      }
+
+      return newPath;
+    } catch (e) {
+      cli.emit('error', OPERATION_FAILED_ERROR, e.message);
+
+      return null;
+    }
+  };
+
   #lsHandler = async () => {
     let dir;
+    const { cli } = this.fileManager._plugins;
+
     try {
       dir = await fs.readdir(this.#currentDir, { withFileTypes: true });
     } catch (e) {
       const { cli } = this.fileManager._plugins;
       cli.emit('error', 'Operation failed', e.message);
+
       return;
     }
 
@@ -69,6 +89,7 @@ export class NavigatorPlugin extends Plugin {
         this.hasAccess(fullPath),
         fs.stat(fullPath).then((stat) => stat.isFile()),
       ]);
+
       if (hasAccess) {
         res.push({
           Name: name,
@@ -77,18 +98,24 @@ export class NavigatorPlugin extends Plugin {
       }
     }
 
-    const { cli } = this.fileManager._plugins;
-
     cli.emit('out', [res, 'table']);
   };
 
-  #upHandler = () => {
+  #upHandler = async () => {
+    const { cli } = this.fileManager._plugins;
+
     if (this.#currentDir === this.#homeDir) {
       cli.emit('operationEnd');
+
       return;
     }
-    this.#currentDir = path.join(this.#currentDir, '..');
-    cli.emit('operationEnd');
+
+    const newPath = await this.resolvePath('..');
+
+    if (newPath) {
+      this.#currentDir = newPath;
+      cli.emit('operationEnd');
+    }
   };
 
   #cdHandler = async (pathArg) => {
@@ -96,19 +123,14 @@ export class NavigatorPlugin extends Plugin {
 
     if (pathArg === '..') {
       this.#upHandler();
+
       return;
     }
 
-    try {
-      const newPath = path.resolve(this.#currentDir, pathArg);
-      if (!(await this.hasAccess(newPath))) {
-        throw new Error('Invalid path');
-      }
+    const newPath = await this.resolvePath(pathArg);
+    if (newPath) {
       this.#currentDir = newPath;
       cli.emit('operationEnd');
-    } catch (e) {
-      cli.emit('error', OPERATION_FAILED_ERROR, e.message);
-    } finally {
     }
   };
 

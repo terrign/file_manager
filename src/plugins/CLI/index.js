@@ -17,7 +17,7 @@ export class CliPlugin extends Plugin {
 
   constructor(...args) {
     super('cli', cliDescriptor, ...args);
-    this.#initListeners();
+    this.#initEvents();
   }
 
   get readlineInterface() {
@@ -71,7 +71,7 @@ export class CliPlugin extends Plugin {
       .map(({ help }) => help)
       .filter(Boolean)
       .join('\n\n');
-    stdout.write(help + '\n');
+    stdout.write(help + '\n\n');
     this.emit('operationEnd');
   };
 
@@ -99,7 +99,7 @@ export class CliPlugin extends Plugin {
     this.emit('operationEnd');
   };
 
-  #initListeners = () => {
+  #initEvents = () => {
     this.#readline.on('line', this.#inputHandler);
 
     this.on('out', this.#outHandler);

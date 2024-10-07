@@ -1,4 +1,10 @@
-import { CliPlugin, NavigatorPlugin, OsPlugin, SessionPlugin } from './plugins/index.js';
+import {
+  CliPlugin,
+  HashPlugin,
+  NavigatorPlugin,
+  OsPlugin,
+  SessionPlugin,
+} from './plugins/index.js';
 
 class FileManager {
   _plugins = {};
@@ -7,7 +13,7 @@ class FileManager {
     for (const PluginConstructor of plugins) {
       const plugin = new PluginConstructor(this);
       const { cliDescriptor, key } = plugin;
-      if (this[key]) {
+      if (this._plugins[key]) {
         throw new Error(`Plugin with key "${key}" already exists`);
       }
       this._plugins[key] = plugin;
@@ -16,4 +22,4 @@ class FileManager {
   }
 }
 
-new FileManager(CliPlugin, OsPlugin, NavigatorPlugin, SessionPlugin);
+new FileManager(CliPlugin, OsPlugin, NavigatorPlugin, SessionPlugin, HashPlugin);
