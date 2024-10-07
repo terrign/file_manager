@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events';
-import { stdout } from 'process';
 
 export class Plugin extends EventEmitter {
   #key;

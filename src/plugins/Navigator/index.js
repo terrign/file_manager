@@ -1,7 +1,125 @@
+import { blue, green, yellow } from '../../utils/consoleColors.js';
 import { Plugin } from '../plugin.js';
+import { homedir } from 'os';
+import fs from 'fs/promises';
+import path from 'path';
+import { OPERATION_FAILED_ERROR } from '../constants.js';
 
-export class Navigator extends Plugin {
+const cdHelp = `${blue`cd`} ${green('[path_to_directory]')} - changes directory to specified path
+${green(`path_to_directory`)} - relative or absolute path to directory`;
+
+const upHelp = `${blue`up`} - one directory up (when you are in the root folder this operation has no effect)`;
+
+const cliDescriptor = {
+  up: {
+    event: 'up',
+    args: null,
+    help: upHelp,
+  },
+  cd: {
+    event: 'cd',
+    args: [{ 0: '*' }],
+    help: cdHelp,
+  },
+  ls: {
+    event: 'ls',
+    args: null,
+    help: blue`ls` + ' - lists all files and folders in current directory',
+  },
+};
+
+export class NavigatorPlugin extends Plugin {
+  #homeDir = homedir();
+  #currentDir = this.#homeDir;
   constructor(...args) {
-    super('navigator', ...args);
+    super('navigator', cliDescriptor, ...args);
+    this.#currentDir = this.#homeDir;
+    this.#initEvents();
   }
+
+  get dir() {
+    return this.#currentDir;
+  }
+
+  get currentDirMessage() {
+    return `You are currently in ${yellow(this.#currentDir)} directory\n`;
+  }
+
+  hasAccess = (path) =>
+    fs
+      .access(path)
+      .then(() => true)
+      .catch(() => false);
+
+  #lsHandler = async () => {
+    let dir;
+    try {
+      dir = await fs.readdir(this.#currentDir, { withFileTypes: true });
+    } catch (e) {
+      const { cli } = this.fileManager._plugins;
+      cli.emit('error', 'Operation failed', e.message);
+      return;
+    }
+
+    const res = [];
+
+    for (const { parentPath, name } of dir) {
+      const fullPath = path.join(parentPath, name);
+      const [hasAccess, isFile] = await Promise.all([
+        this.hasAccess(fullPath),
+        fs.stat(fullPath).then((stat) => stat.isFile()),
+      ]);
+      if (hasAccess) {
+        res.push({
+          Name: name,
+          Type: isFile ? 'file' : 'directory',
+        });
+      }
+    }
+
+    const { cli } = this.fileManager._plugins;
+
+    cli.emit('out', [res, 'table']);
+  };
+
+  #upHandler = () => {
+    if (this.#currentDir === this.#homeDir) {
+      cli.emit('operationEnd');
+      return;
+    }
+    this.#currentDir = path.join(this.#currentDir, '..');
+    cli.emit('operationEnd');
+  };
+
+  #cdHandler = async (pathArg) => {
+    const { cli } = this.fileManager._plugins;
+
+    if (pathArg === '..') {
+      this.#upHandler();
+      return;
+    }
+
+    try {
+      const newPath = path.resolve(this.#currentDir, pathArg);
+      if (!(await this.hasAccess(newPath))) {
+        throw new Error('Invalid path');
+      }
+      this.#currentDir = newPath;
+      cli.emit('operationEnd');
+    } catch (e) {
+      cli.emit('error', OPERATION_FAILED_ERROR, e.message);
+    } finally {
+    }
+  };
+
+  #initEvents = () => {
+    this.on('ls', this.#lsHandler);
+    this.on('up', this.#upHandler);
+    this.on('cd', this.#cdHandler);
+
+    const { cli } = this.fileManager._plugins;
+    cli.on('operationEnd', () => {
+      process.stdout.write(this.currentDirMessage);
+    });
+  };
 }

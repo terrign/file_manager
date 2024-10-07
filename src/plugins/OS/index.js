@@ -13,7 +13,6 @@ ${green('--architecture')} - get CPU architecture for which Node.js binary has c
 const cliDescriptor = {
   os: {
     event: 'os',
-    desc: blue`os ` + green`[--arg]`,
     args: { 0: ['--EOL', '--cpus', '--homedir', '--username', '--architecture'] },
     help,
   },
@@ -80,10 +79,9 @@ export class OsPlugin extends Plugin {
       const arg = args[0].slice(2);
       if (arg === 'cpus') {
         const { cpusData, cpusCount } = this.cpus;
-        cli.emit('out', `Total CPU's count: ` + yellow(cpusCount));
-        cli.emit('table', cpusData);
+        cli.emit('out', [`Total CPU's count: ` + yellow(cpusCount)], [cpusData, 'table']);
       } else {
-        cli.emit('out', this[arg]);
+        cli.emit('out', [this[arg]]);
       }
     });
   };

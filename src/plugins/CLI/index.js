@@ -1,6 +1,6 @@
 import { Plugin } from '../plugin.js';
 import { stdin, stdout } from 'process';
-import { white, red, blue, yellow, green } from '../../utils/consoleColors.js';
+import { white, red, yellow } from '../../utils/consoleColors.js';
 import { createInterface } from 'readline/promises';
 import { HELP_SUGGESTION, INVALID_COMMAND_ERROR } from '../constants.js';
 
@@ -18,6 +18,10 @@ export class CliPlugin extends Plugin {
   constructor(...args) {
     super('cli', cliDescriptor, ...args);
     this.#initListeners();
+  }
+
+  get readlineInterface() {
+    return this.#readline;
   }
 
   registerCommands = (targetKey, derivedCliDescriptor) => {
@@ -48,10 +52,13 @@ export class CliPlugin extends Plugin {
   };
 
   #inputHandler = (data) => {
+    if (!data) {
+      return;
+    }
     const { command, args } = this.#parseInput(data);
 
     if (!this.cliDescriptor[command]) {
-      this.#errorHandler(INVALID_COMMAND_ERROR, HELP_SUGGESTION);
+      this.emit('error', INVALID_COMMAND_ERROR, HELP_SUGGESTION);
       return;
     }
 
@@ -65,6 +72,7 @@ export class CliPlugin extends Plugin {
       .filter(Boolean)
       .join('\n\n');
     stdout.write(help + '\n');
+    this.emit('operationEnd');
   };
 
   #errorHandler = (message, ...desc) => {
@@ -72,22 +80,36 @@ export class CliPlugin extends Plugin {
     for (const line of desc) {
       stdout.write(line + '\n');
     }
+    this.emit('operationEnd');
+  };
+
+  #outHandler = (...data) => {
+    for (let chunk of data) {
+      if (typeof chunk === 'string') {
+        stdout.write(yellow(chunk) + '\n');
+      } else {
+        const [value, format] = chunk;
+        if (format === 'table') {
+          console.table(value);
+        } else {
+          stdout.write(value + '\n');
+        }
+      }
+    }
+    this.emit('operationEnd');
   };
 
   #initListeners = () => {
-    this.on('out', (string) => {
-      stdout.write(yellow(string) + '\n');
-    });
+    this.#readline.on('line', this.#inputHandler);
+
+    this.on('out', this.#outHandler);
     this.on('error', this.#errorHandler);
     this.on('prompt', this.#promptHandler);
-    this.#readline.on('line', (data) => {
-      if (!data) {
-        return;
-      }
-      this.#inputHandler(data);
-    });
-    this.#readline.on('SIGINT', () => this.fileManager._plugins.session.emit('exit'));
     this.on('help', this.#helpHandler);
-    this.on('table', console.table);
+
+    this.on('table', (...args) => {
+      console.table(...args);
+      this.emit('operationEnd');
+    });
   };
 }

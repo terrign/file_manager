@@ -17,6 +17,7 @@ export class SessionPlugin extends Plugin {
     super('session', cliDescriptor, ...args);
     this.#initUser();
     this.#handleExit();
+    this.fileManager._plugins.cli.readlineInterface.on('SIGINT', () => this.emit('exit'));
   }
 
   get userName() {

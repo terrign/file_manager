@@ -16,4 +16,4 @@ class FileManager {
   }
 }
 
-new FileManager(CliPlugin, SessionPlugin, OsPlugin, NavigatorPlugin);
+new FileManager(CliPlugin, OsPlugin, NavigatorPlugin, SessionPlugin);
