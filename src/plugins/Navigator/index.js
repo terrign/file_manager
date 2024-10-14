@@ -23,29 +23,27 @@ export class NavigatorPlugin extends Plugin {
     return `You are currently in ${yellow(this.#currentDir)} directory\n`;
   }
 
-  hasAccess = (path) =>
+  resolvePath = async (pathArg) => {
+    let result = { resolvedPath: null, isDir: null, isFile: null, exists: false, error: null };
+    try {
+      result.resolvedPath = path.resolve(this.#currentDir, pathArg);
+      result.exists = await this.#exists(result.resolvedPath);
+      if (result.exists) {
+        const stats = await fs.lstat(result.resolvedPath);
+        result.isDir = stats.isDirectory();
+        result.isFile = stats.isFile();
+      }
+    } catch (e) {
+      result.error = e;
+    }
+    return result;
+  };
+
+  #exists = (path) =>
     fs
       .access(path)
       .then(() => true)
       .catch(() => false);
-
-  resolvePath = async (pathArg) => {
-    const { cli } = this.fileManager._plugins;
-
-    try {
-      const newPath = path.resolve(this.#currentDir, pathArg);
-
-      if (!(await this.hasAccess(newPath))) {
-        throw new Error('Invalid path');
-      }
-
-      return newPath;
-    } catch (e) {
-      cli.emit('error', OPERATION_FAILED_ERROR, e.message);
-
-      return null;
-    }
-  };
 
   #lsHandler = async () => {
     let dir;
@@ -64,12 +62,10 @@ export class NavigatorPlugin extends Plugin {
 
     for (const { parentPath, name } of dir) {
       const fullPath = path.join(parentPath, name);
-      const [hasAccess, isFile] = await Promise.all([
-        this.hasAccess(fullPath),
-        fs.stat(fullPath).then((stat) => stat.isFile()),
-      ]);
 
-      if (hasAccess) {
+      const { exists, isFile } = await this.resolvePath(fullPath);
+
+      if (exists) {
         res.push({
           Name: name,
           Type: isFile ? 'file' : 'directory',
@@ -89,10 +85,10 @@ export class NavigatorPlugin extends Plugin {
       return;
     }
 
-    const newPath = await this.resolvePath('..');
+    const { resolvedPath } = await this.resolvePath('..');
 
-    if (newPath) {
-      this.#currentDir = newPath;
+    if (resolvedPath) {
+      this.#currentDir = resolvedPath;
       cli.emit('operationEnd');
     }
   };
@@ -106,9 +102,15 @@ export class NavigatorPlugin extends Plugin {
       return;
     }
 
-    const newPath = await this.resolvePath(pathArg);
-    if (newPath) {
-      this.#currentDir = newPath;
+    const { resolvedPath, isDir } = await this.resolvePath(pathArg);
+
+    if (!isDir || !resolvedPath) {
+      cli.emit('error', OPERATION_FAILED_ERROR, 'Directory does not exist');
+      return;
+    }
+
+    if (resolvedPath) {
+      this.#currentDir = resolvedPath;
       cli.emit('operationEnd');
     }
   };

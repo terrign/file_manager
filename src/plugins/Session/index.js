@@ -1,6 +1,6 @@
 import { argv } from 'process';
 import { Plugin } from '../plugin.js';
-import { blue } from '../../utils/consoleColors.js';
+import { blue, yellow } from '../../utils/consoleColors.js';
 
 const cliDescriptor = {
   '.exit': {
@@ -26,7 +26,7 @@ export class SessionPlugin extends Plugin {
 
   #greet = () => {
     const { cli } = this.fileManager._plugins;
-    cli.emit('out', `Welcome to the File Manager, ${this.userName}!`);
+    cli.emit('out', [`Welcome to the File Manager, ${yellow(this.userName)}!`]);
   };
 
   #initUser = () => {
@@ -45,10 +45,8 @@ export class SessionPlugin extends Plugin {
 
   #handleExit = () => {
     this.on('exit', () => {
-      const { cli } = this.fileManager._plugins;
-      cli.emit(
-        'out',
-        `Thank you for using File Manager, ${this.userName ?? 'Anonymous'}, goodbye!`
+      process.stdout.write(
+        `\nThank you for using File Manager, ${yellow(this.userName ?? 'Anonymous')}, goodbye!\n`
       );
       process.exit(0);
     });

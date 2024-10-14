@@ -25,10 +25,21 @@ export class HashPlugin extends Plugin {
   #hashHandler = async (pathArg) => {
     const { cli } = this.fileManager._plugins;
     const { navigator } = this.fileManager._plugins;
-    const pathToFile = await navigator.resolvePath(pathArg);
-    if (pathToFile) {
+    const { resolvedPath, isFile } = await navigator.resolvePath(pathArg);
+
+    if (!resolvedPath) {
+      cli.emit('error', OPERATION_FAILED_ERROR, 'Invalid path to file');
+      return;
+    }
+
+    if (!isFile) {
+      cli.emit('error', OPERATION_FAILED_ERROR, 'Path is not a file');
+      return;
+    }
+
+    if (resolvedPath) {
       const hash = createHash('sha256');
-      createReadStream(pathToFile)
+      createReadStream(resolvedPath)
         .on('data', (chunk) => {
           hash.update(chunk);
         })
