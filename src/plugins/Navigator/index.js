@@ -24,7 +24,15 @@ export class NavigatorPlugin extends Plugin {
   }
 
   resolvePath = async (pathArg) => {
-    let result = { resolvedPath: null, isDir: null, isFile: null, exists: false, error: null };
+    let result = {
+      resolvedPath: null,
+      isDir: null,
+      isFile: null,
+      exists: false,
+      error: null,
+      name: null,
+      ext: null,
+    };
     try {
       result.resolvedPath = path.resolve(this.#currentDir, pathArg);
       result.exists = await this.#exists(result.resolvedPath);
@@ -32,6 +40,7 @@ export class NavigatorPlugin extends Plugin {
         const stats = await fs.lstat(result.resolvedPath);
         result.isDir = stats.isDirectory();
         result.isFile = stats.isFile();
+        result.name = path.basename(result.resolvedPath);
       }
     } catch (e) {
       result.error = e;
