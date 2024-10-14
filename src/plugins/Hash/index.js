@@ -1,13 +1,13 @@
 import { blue, green } from '../../utils/consoleColors.js';
-import { OPERATION_FAILED_ERROR } from '../constants.js';
+import { OPERATION_FAILED_ERROR, PATH_PARAM_DESC } from '../constants.js';
 import { Plugin } from '../plugin.js';
 import { createHash } from 'crypto';
 import { createReadStream } from 'fs';
 
 const hashHelp = `${blue`hash`} ${green(
   '[path_to_file]'
-)} - calculates hash for file and prints it into console
-${green(`path_to_file`)} - relative or absolute path to directory`;
+)} - calculate hash for file and prints it into console
+${green(`path_to_file`)} - ${PATH_PARAM_DESC} to file`;
 
 const cliDescriptor = {
   hash: {

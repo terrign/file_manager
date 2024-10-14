@@ -1,9 +1,11 @@
 import {
   CliPlugin,
+  FsPlugin,
   HashPlugin,
   NavigatorPlugin,
   OsPlugin,
   SessionPlugin,
+  ZipPlugin,
 } from './plugins/index.js';
 
 class FileManager {
@@ -22,4 +24,12 @@ class FileManager {
   }
 }
 
-new FileManager(CliPlugin, OsPlugin, NavigatorPlugin, SessionPlugin, HashPlugin);
+new FileManager(
+  CliPlugin,
+  OsPlugin,
+  NavigatorPlugin,
+  FsPlugin,
+  SessionPlugin,
+  HashPlugin,
+  ZipPlugin
+);

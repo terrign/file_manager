@@ -1,32 +1,10 @@
-import { blue, green, yellow } from '../../utils/consoleColors.js';
+import { yellow } from '../../utils/consoleColors.js';
 import { Plugin } from '../plugin.js';
 import { homedir } from 'os';
 import fs from 'fs/promises';
 import path from 'path';
 import { OPERATION_FAILED_ERROR } from '../constants.js';
-
-const cdHelp = `${blue`cd`} ${green('[path_to_directory]')} - changes directory to specified path
-${green(`path_to_directory`)} - relative or absolute path to directory`;
-
-const upHelp = `${blue`up`} - one directory up (when you are in the root folder this operation has no effect)`;
-
-const cliDescriptor = {
-  up: {
-    event: 'up',
-    args: null,
-    help: upHelp,
-  },
-  cd: {
-    event: 'cd',
-    args: [{ 0: '*' }],
-    help: cdHelp,
-  },
-  ls: {
-    event: 'ls',
-    args: null,
-    help: blue`ls` + ' - lists all files and folders in current directory',
-  },
-};
+import { cliDescriptor } from './constants.js';
 
 export class NavigatorPlugin extends Plugin {
   #homeDir = homedir();
@@ -53,6 +31,7 @@ export class NavigatorPlugin extends Plugin {
 
   resolvePath = async (pathArg) => {
     const { cli } = this.fileManager._plugins;
+
     try {
       const newPath = path.resolve(this.#currentDir, pathArg);
 

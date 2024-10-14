@@ -1,22 +1,8 @@
-import { blue, green, yellow } from '../../utils/consoleColors.js';
+import { yellow } from '../../utils/consoleColors.js';
 import { HELP_SUGGESTION, INVALID_COMMAND_ERROR } from '../constants.js';
 import { Plugin } from '../plugin.js';
 import os from 'os';
-
-const help = `${blue('os')} ${green('[--arg]')}
-${green('--EOL')} - get EOL (default system End-Of-Line)
-${green('--cpus')} - get host machine CPUs info
-${green('--homedir')} - get home directory
-${green('--username')} - get current system user name
-${green('--architecture')} - get CPU architecture for which Node.js binary has compiled`;
-
-const cliDescriptor = {
-  os: {
-    event: 'os',
-    args: { 0: ['--EOL', '--cpus', '--homedir', '--username', '--architecture'] },
-    help,
-  },
-};
+import { cliDescriptor } from './constants.js';
 
 export class OsPlugin extends Plugin {
   constructor(...args) {
